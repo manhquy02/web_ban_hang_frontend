@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lịch sử đơn hàng</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+
+  <script>
+    $(document).ready(function () {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        $('#history-orders').html(`<div class="alert alert-warning text-center">Bạn chưa đăng nhập!</div>`);
+        return;
+      }
+
+      $.ajax({
+        url: 'http://localhost:5555/orders/history',
+        method: 'GET',
+        headers: {
+          Authorization: 'Bearer ' + token
+        },
+        success: function (res) {
+          if (res.result === 1) {
+            const grouped = {};
+            res.data.forEach(item => {
+              const orderId = item.id;
+              if (!grouped[orderId]) {
+                grouped[orderId] = {
+                  created_at: item.created_at,
+                  receiver_Name: item.receiver_Name,
+                  phone: item.phone,
+                  detail_address: item.detail_address,
+                  created_at: item.created_at,
+                  name_province: item.name_province,
+                  name_distric: item.name_distric,
+                  name_ward: item.name_ward,
+                  products: []
+                };
+              }
+              grouped[orderId].products.push({
+                name_product: item.name_product,
+                quantity: item.quantity,
+                price: item.price,
+                img: item.image
+
+              });
+            });
+
+            let html = '<div class="container my-4">';
+            const entries = Object.entries(grouped).reverse();
+            let orderNumber = entries.length;
+            entries.forEach(([orderId, order]) => {
+
+              html += `
+                <div class="card mb-5  mx-auto" style="max-width: 900px;">
+                  
+                  <div class="card-header fw-bold">
+                    Đơn hàng: ${orderNumber}
+                  <p>
+                   Ngày đặt:${new Date(order.created_at).toLocaleDateString('vi-VN')}
+                  </p>
+                </div>
+                  <ul class="list-group list-group-flush">
+              `;
+
+
+              order.products.forEach(product => {
+                html += `
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center" style="gap: 10px; flex: 1;">
+                      <img src="http://localhost:5555/uploads/${product.img}"
+                        alt="${product.name_product}"
+                        style="width: 80px; height: 50px; object-fit: fill;">
+
+
+                      <div style="min-width: 0;">
+                        <div class="fw-semibold text-truncate" style="max-width: 200px;">${product.name_product}</div>
+                        <div class="text-muted">Số lượng: ${product.quantity}</div>
+                      </div>
+                    </div>
+                    <span class="badge bg-secondary rounded-pill">${(product.quantity * product.price).toLocaleString()}đ</span>
+                  </li>
+       
+                `;
+
+              });;
+              const totalPrice = order.products.reduce((sum, p) => sum + p.quantity * p.price, 0);
+              html += `
+                  <li class="list-group-item d-flex justify-content-between fw-bold">
+                    <button class="btn btn-outline-primary openModal" data-bs-toggle="collapse" data-bs-target="#details-${orderId}">
+                      Xem chi tiết
+                    </button>
+                    <div  class="modal customModal mt-3" >
+                      <div class="modal-content">
+                       
+                        <div><strong>Tên người nhận:</strong> ${order.receiver_Name}</div>
+                        <div><strong>SĐT:</strong> ${order.phone}</div>
+                        <div><strong>Ngày đặt:</strong> ${new Date(order.created_at).toLocaleString()}</div>
+                        <div><strong>Địa chỉ:</strong> ${order.detail_address}</div>
+                        
+                        <div><strong>Tỉnh thành:</strong> ${order.name_province}</div>
+                        <div><strong>Quận huyện:</strong> ${order.name_distric}</div>
+                        <div><strong>Phường xã:</strong> ${order.name_ward}</div>
+                      </div>
+                    </div>
+                    <div>Tổng : ${totalPrice.toLocaleString()}đ</div>
+                  </li>
+             
+                `;
+              orderNumber--;
+
+              html += '</ul></div>';
+            });
+            html += '</div>';
+
+            $('#history-orders').html(html);
+          } else {
+            $('#history-orders').html(`<div class="alert alert-warning text-center">${res.message}</div>`);
+          }
+        },
+        error: function () {
+          $('#history-orders').html(`<div class="alert alert-danger text-center">Lỗi server, vui lòng thử lại sau.</div>`);
+        }
+      });
+      $(document).on('click', '.openModal', function () {
+
+        const modal = $(this).closest('.list-group-item').find('.customModal');
+        modal.css('display', 'block');
+        window.onclick = function (event) {
+          if (event.target === modal[0]) {
+            modal.css('display', 'none');
+          }
+        }
+      })
+    });
+  </script>
+</head>
+
+<body>
+
+
+  <div style="background-color: #ffd500;">
+    <div class="container">
+      <div class="  row align-items-center  py-2">
+        <div class="col-4 ">
+          <h1>
+            <a href="index.html" class="text-decoration-none text-dark">Thế giới di động</a>
+          </h1>
+        </div>
+        <div class="col-4">
+          <input type="text" id="name_product" class="form-control form-control-sm py-2 rounded-pill "
+            placeholder="Bạn tìm gì ...">
+        </div>
+        <div id="icon" class="col-4 d-flex justify-content-end gap-3">
+
+          <a href="cart.html" class="text-dark text-decoration-none d-flex align-items-center gap-1" id="cart-icon"
+            title="Giỏ hàng"><i class="bi bi-cart fs-3"></i><span class="fs-5">Giỏ
+              hàng</span></a>
+          <div id="user-dropdown"></div>
+        </div>
+        <div>
+          <ul class="nav">
+            <li class="nav-item">
+              <a class="nav-link active text-dark" href="category.html?category_id=1">Điện thoại</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link active text-dark" href="category.html?category_id=2">Laptop</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link active text-dark" href="category.html?category_id=3">Phụ kiện</a>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+  <!-- <div class="d-flex align-items-center mb-5 mt-3 ms-3">
+    <h1 class="me-3 mb-0"><a href="index.html" class="text-decoration-none text-secondary ">Sản phẩm
+        &gt;&gt;</a>
+    </h1>
+    <h1 class="mb-0">Lịch sử đơn hàng</h1>
+  </div> -->
+  <div class="container py-2">
+    <div class="d-flex align-items-center gap-2 my-4">
+      <h4 class="mb-0">
+        <a href="index.html" class="text-secondary text-decoration-none d-flex align-items-center">
+          <i class="bi bi-house-door-fill me-1"></i> Sản phẩm
+        </a>
+      </h4>
+      <i class="bi bi-chevron-right text-muted"></i>
+      <h4 class="mb-0 text-dark ">Lịch sử đơn hàng</h4>
+    </div>
+    <div id="history-orders"></div>
+  </div>
+
+
+
+  <!-- Modal hiển thị chi tiết đơn hàng -->
+  <div class="modal fade" id="orderDetailModal" tabindex="-1" aria-labelledby="orderDetailModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="orderDetailModalLabel">Chi tiết đơn hàng</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+        </div>
+        <div class="modal-body" id="orderDetailContent">
+          <!-- Nội dung chi tiết sẽ được render ở đây bằng JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+</body>
+
+</html>

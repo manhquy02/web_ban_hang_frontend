@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng ký</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- <script>
+        $(document).ready(function () {
+            $('.register-form').submit(function (e) {
+                e.preventDefault()
+                $.post('http://localhost:5555/register', {
+                    username: $(this).find('[name="username"]').val(),
+                    email: $(this).find('[name="email"]').val(),
+                    password: $(this).find('[name="password"]').val()
+                }, function (response) {
+                    if (response.result === 1) {
+                        alert("Đăng ký thành công")
+                        window.location.href = 'login.html'
+                    } else {
+                        alert('Lỗi :' + response.message)
+                    }
+                })
+            })
+        })
+    </script> -->
+
+
+
+    <script>
+        $(document).ready(function () {
+            $('.register-form').submit(function (e) {
+                e.preventDefault();
+                $.post('http://localhost:5555/register', {
+                    username: $(this).find('.username').val(),
+                    email: $(this).find('.email').val(),
+                    password: $(this).find('.password').val()
+
+                }, function (response) {
+                    if (response.result == 1) {
+                        alert(response.message)
+                       
+                        window.location.href = 'login.html'
+                    } else {
+                        alert('Lỗi : ' + response.message)
+                    }
+                })
+            })
+        })
+    </script>
+</head>
+
+<body>
+    <div class=" d-flex justify-content-center align-items-center vh-100">
+        <form class="register-form border p-4" style="width: 100%; max-width: 400px;">
+            <div class="mb-3 mt-3" style="text-align: center;">
+                <h1>Đăng ký</h1>
+            </div>
+            <div class="mb-3">
+                <label class=" form-label" for="username">Tên đăng ký</label>
+                <input type="text" name="username" class="username form-control" >
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="email">Tên email</label>
+                <input type="email" name="email" class="email form-control" >
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="password">Mật khẩu</label>
+                <input type="password" name="password" class="password form-control" >
+            </div>
+
+            <button class="register-btn btn btn-primary w-100 form-submit mt-3" type="submit">Đăng ký</button>
+
+
+        </form>
+    </div>
+</body>
+
+</html>

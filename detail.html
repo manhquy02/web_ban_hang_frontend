@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            const urlParams = new URLSearchParams(window.location.search);
+            const id = urlParams.get('id');
+            $.get(`http://localhost:5555/products/${id}`, function (res) {
+                console.log(res.data)
+                const detailProductList = $('#detail-product-list');
+                detailProductList.empty();
+                const product = res.data[0];
+                const html = `
+                    <div class="row">
+                        <div class="col-md-6">
+                           <img src="http://localhost:5555/uploads/${product.image}" class="card-img-top" alt="${product.name_product}" style="width: 100%; height: 500px; object-fit: cover;" >
+                           
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="card-title text-truncate fw-bold text-dark mb-3 mt-3">${product.name_product}</h5>
+                            <p class="card-text  fw-bold text-danger fs-5">${product.price.toLocaleString()}₫</p>
+                            <p class="card-text  fw-bold text-dark fs-5">Chi tiết : ${product.description}</p>
+                               <div>
+                                <button class="btn btn-outline-primary add-to-cart"  
+                                    data-productid="${product.id}"
+                                    data-name="${product.name_product}"
+                                    data-price="${product.price}"
+                                    data-img="${product.image}"
+                                     data-stock="${product.stock}">Thêm giỏ hàng
+                                </button>
+                                
+                                <a href="pay.html" class="btn btn-warning pay-btn" data-productid="${product.id}"
+                                    data-name="${product.name_product}"
+                                    data-price="${product.price}"
+                                    data-img="${product.image}"
+                                     data-stock="${product.stock}">Mua ngay</a>
+                            </div>
+
+                        </div>
+                    </div>
+                    
+                    `;
+                detailProductList.append(html)
+
+                $(document).on('click', '.add-to-cart', handleAddToCart);
+                function handleAddToCart( e, showAlert = true) {
+                    const productId = $(this).data('productid');
+                    const name = $(this).data('name');
+                    const price = $(this).data('price');
+                    const img = $(this).data('img');
+                    const stock = $(this).data('stock');
+                    let product = {
+                        product_id: productId,
+                        name,
+                        price: parseFloat(price),
+                        img,
+                        quantity: 1,
+                        stock: parseInt($(this).data('stock'))
+
+                    }
+                    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+
+                    const existingIndex = cart.findIndex(item => item.product_id === product.product_id);
+
+                    if (existingIndex !== -1) {
+                        cart[existingIndex].quantity += product.quantity;
+                    } else {
+                        cart.push(product);
+                    }
+                    localStorage.setItem('cart', JSON.stringify(cart));
+                    if(showAlert){
+                    alert('Đã thêm vào giỏ hàng')
+                    }
+                }
+
+                if (localStorage.getItem('token')) {
+
+                    $('#register-icon').addClass('d-none');
+                    $('#login-icon').addClass('d-none');
+                    const email = localStorage.getItem('email')
+                    const dropdownHtml = `
+                 <div class="dropdown">
+                    <button class="btn btn-light rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;" data-bs-toggle="dropdown">
+                        👤
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><p class="dropdown-item" href="#">Tên : ${email}</p></li>
+                        <li><a class="dropdown-item" href="#" id="view-order-history">Lịch sử đơn hàng</a></li>
+                        <li><a class="dropdown-item" href="#" id="logout-btn">Đăng xuất</a></li>
+                    </ul>
+                </div>
+                `
+                    $('#user-dropdown').html(dropdownHtml)
+
+                }
+                $(document).on('click', '#view-order-history', function (e) {
+                    e.preventDefault();
+
+                    window.location.href = 'ordered.html'
+                })
+                $(document).on('click', '#logout-btn', function (e) {
+                    e.preventDefault();
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('email');
+                    localStorage.removeItem('id');
+                    window.location.href = 'index.html'
+                })
+                $(document).on('click', '.pay-btn', function(e){
+                   
+                    handleAddToCart.call(this,e,false)
+                });
+
+
+            })
+        })
+    </script>
+</head>
+
+<body>
+    <div class="">
+        <div style="background-color: #ffd500;">
+            <div class="container">
+                <div class="  row align-items-center  py-2">
+                    <div class="col-4 ">
+                        <h1>
+                            <a href="index.html" class="text-decoration-none text-dark">Thế giới di động</a>
+                        </h1>
+                    </div>
+                    <div class="col-4">
+                        <input type="text" id="name_product" class="form-control form-control-sm py-2 rounded-pill "
+                            placeholder="Bạn tìm gì ...">
+                    </div>
+                    <div id="icon" class="col-4 d-flex justify-content-end gap-3">
+                        <a href="register.html" title="Đăng ký" id="register-icon"
+                            class="text-dark text-decoration-none d-flex align-items-center gap-1"> <i
+                                class="bi bi-person-plus fs-3"></i><span class="fs-5">Đăng ký</span></a>
+                        <a href="login.html" id="login-icon" title="Đăng nhập"
+                            class="text-dark text-decoration-none d-flex align-items-center gap-1"><i
+                                class="bi bi-box-arrow-in-right fs-3"></i><span class="fs-5">Đăng nhập</span></a>
+                        <a href="cart.html" class="text-dark text-decoration-none d-flex align-items-center gap-1"
+                            id="cart-icon" title="Giỏ hàng"><i class="bi bi-cart fs-3"></i><span class="fs-5">Giỏ
+                                hàng</span></a>
+                        <div id="user-dropdown"></div>
+                    </div>
+                    <div>
+                        <ul class="nav">
+                            <li class="nav-item">
+                                <a class="nav-link active text-dark" href="category.html?category_id=1">Điện thoại</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link active text-dark" href="category.html?category_id=2">Laptop</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link active text-dark" href="category.html?category_id=3">Phụ kiện</a>
+                            </li>
+                        </ul>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+        <div class="container py-3">
+
+            <div class="mb-4 d-flex align-items-center flex-wrap gap-2">
+
+
+                <div>
+
+                    <button hidden class="btn btn-outline-primary fw-bold ms-3" onclick="loadProducts()">Tìm
+                        kiếm</button>
+                </div>
+            </div>
+            <div id="active-filters" class="mb-3">
+
+                <button class="btn btn-sm btn-outline-danger d-none" id="clear-search">
+                    X Tìm
+                </button>
+
+            </div>
+            <div id="detail-product-list" class="container mt-4">
+
+            </div>
+
+        </div>
+    </div>
+</body>
+
+</html>

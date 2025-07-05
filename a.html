@@ -1,0 +1,306 @@
+<!-- <html>
+
+<head>
+    <title>Trang chủ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <script>
+
+        $(document).ready(function () {
+            const limit = 6;
+            let page = 1;
+            let sortFilter = '';
+            function loadProducts() {
+                let url = `http://localhost:5555/products?page=${page}&limit=${limit}`;
+                if (sortFilter) {
+                    url += `&sort=${sortFilter}`;
+                }
+                $.get(url, function (data) {
+                    let isSearching = false;
+                    let products = data.data;
+                    let total = data.pagination.total_pages;
+                    let apiCurrentPage = data.pagination.current_page;
+                    $('#product-list').html('');
+                    products.forEach(product => {
+                        $('#product-list').append(`
+                            <div class="col-md-4">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h5 class="card-title">${product.name_product}</h5>
+                                        <p class="card-text">Giá: ${product.price.toLocaleString()}₫</p>
+                                        <div class="mb-3">
+                                            <label class="form-label">Số lượng:</label>
+                                            <input type="number" value="1" min="1" class="form-control quantity" />
+                                        </div>
+                                        <button 
+                                            class="btn btn-primary add-to-cart" 
+                                            data-productid="${product.id}" 
+                                            data-name="${product.name_product}" 
+                                            data-price="${product.price}">
+                                            Thêm vào giỏ hàng
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `);
+                    });
+
+                    let paginationHtml = '';
+                    for (let i = 1; i <= total; i++) {
+                        paginationHtml += `
+                    <li class="page-item ${i === apiCurrentPage ? 'active' : ''}">
+                        <a class="page-link page-btn" href="#">${i}</a>
+                    </li>`
+                    }
+                    $('.pagination').html(paginationHtml);
+                    $('.pagination').off('click', '.page-btn').on('click', '.page-btn', function (e) {
+                        e.preventDefault();
+                        const selectedPage = parseInt($(this).text());
+                        if (selectedPage !== page) {
+                            page = selectedPage;
+                            loadProducts();
+                        }
+                    })
+                })
+            }
+            loadProducts();
+
+
+            if (localStorage.getItem('token')) {
+                $('a[title="Đăng ký"]').hide();
+                $('a[title="Đăng nhập"]').hide();
+                const email = localStorage.getItem('email')
+                const dropdownHtml = `
+                 <div class="dropdown">
+            <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                👤
+            </button>
+            <ul class="dropdown-menu">
+                 <li><p class="dropdown-item" href="#">Tên : ${email}</p></li>
+                 <li><a class="dropdown-item" href="#" id="view-order-history">Lịch sử đơn hàng</a></li>
+                <li><a class="dropdown-item" href="#" id="logout-btn">Đăng xuất</a></li>
+            </ul>
+        </div>
+                    `
+                $('#user-dropdown').html(dropdownHtml)
+
+            }
+            $(document).on('click', '#view-order-history', function (e) {
+                e.preventDefault();
+
+                window.location.href = 'ordered.html'
+            })
+
+            $(document).on('click', '#logout-btn', function (e) {
+                e.preventDefault();
+                localStorage.removeItem('token');
+                localStorage.removeItem('email');
+                localStorage.removeItem('id');
+                window.location.href = 'index.html'
+            })
+
+
+            $('.clear-search').on('click', function (e) {
+                e.preventDefault();
+                $('.search-name').val('');
+                $('.clear-search').hide();
+                page = 1;
+                loadProducts();
+
+            })
+
+            $('.clear-filter').on('click', function (e) {
+                e.preventDefault();
+                $('.search-filter').val('');
+                $('.clear-filter').hide();
+                page = 1;
+                loadProducts();
+
+            })
+            $('#search-name').on('click', function () {
+                $('#clear-search').show();
+                const keyword = $('#search-product').val().trim();
+                if (!keyword) {
+                    alert('Please enter keyword');
+                    return;
+                }
+
+                $.ajax({
+                    url: `http://localhost:5555/products/search?name_product=${encodeURIComponent(keyword)}`,
+                    method: 'GET',
+                    success: function (response) {
+                        if (response && response.data && response.data.length > 0) {
+                            const html = response.data.map(product => `
+                            <div class="col-md-4">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h5 class="card-title">${product.name_product}</h5>
+                                        <p class="card-text">Giá: ${product.price.toLocaleString()}₫</p>
+                                        <div class="mb-3">
+                                            <label class="form-label">Số lượng:</label>
+                                            <input type="number" value="1" min="1" class="form-control quantity" />
+                                        </div>
+                                        <button 
+                                            class="btn btn-primary add-to-cart" 
+                                            data-productid="${product.id}" 
+                                            data-name="${product.name_product}" 
+                                            data-price="${product.price}">
+                                            Thêm vào giỏ hàng
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            `)
+                            $('#product-list').html(html);
+                            $('#clear-search .clear-search').show();
+                            $('.pagination').hide();
+                        } else {
+                            $('#product-list').html('<p>Không tìm thấy sản phẩm.</p>');
+                            $('#clear-search .clear-search').show();
+                            $('.pagination').hide();
+                        }
+                    },
+
+                })
+            })
+
+            $('#sort-price').on('change', function () {
+                sortFilter = $(this).val();
+                page = 1;
+                loadProducts();
+            })
+            $('#filter-btn').on('click', function () {
+                $('#clear-filter').show();
+                const min_price = $('#min_price').val();
+                const max_price = $('#max_price').val();
+
+                $.ajax({
+                    url: `http://localhost:5555/products/filter?min_price=${min_price}&max_price=${max_price}`,
+                    method: 'GET',
+                    success: function (response) {
+                        if (response && response.data && response.data.length > 0) {
+                            const html = response.data.map(product => `
+                            <div class="col-md-4">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h5 class="card-title">${product.name_product}</h5>
+                                        <p class="card-text">Giá: ${product.price.toLocaleString()}₫</p>
+                                        <div class="mb-3">
+                                            <label class="form-label">Số lượng:</label>
+                                            <input type="number" value="1" min="1" class="form-control quantity" />
+                                        </div>
+                                        <button 
+                                            class="btn btn-primary add-to-cart" 
+                                            data-productid="${product.id}" 
+                                            data-name="${product.name_product}" 
+                                            data-price="${product.price}">
+                                            Thêm vào giỏ hàng
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            `)
+                            $('#product-list').html(html);
+                            $('#clear-filter .clear-filter').show();
+                            $('.pagination').hide();
+                        } else {
+                            $('#product-list').html('<p>Không tìm thấy sản phẩm.</p>');
+                            $('#clear-filter .clear-filter').hide();
+                            $('.pagination').hide();
+                        }
+                    },
+
+                })
+            })
+
+
+
+
+            $(document).on('click', '.add-to-cart', handleAddToCart);
+            function handleAddToCart() {
+                const productId = $(this).data('productid');
+                const name = $(this).data('name');
+                const price = $(this).data('price');
+                const quantity = parseInt($(this).closest('.card-body').find('.quantity').val());
+                let product = {
+                    product_id: productId,
+                    name,
+                    price: parseFloat(price),
+                    quantity
+                }
+                let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+                const existingIndex = cart.findIndex(item => item.product_id === product.product_id);
+
+                if (existingIndex !== -1) {
+                    cart[existingIndex].quantity += product.quantity;
+                } else {
+                    cart.push(product);
+                }
+                localStorage.setItem('cart', JSON.stringify(cart));
+                alert('Added to cart')
+            }
+        });
+    </script>
+</head>
+
+<body>
+    <div class="container py-5">
+        <div class="row align-items-center mb-2">
+            <div class="col-4">
+                <h1>
+                    <a href="index.html" class="text-decoration-none text-dark text-">Sản phẩm</a>
+                </h1>
+            </div>
+            <div class="col-4">
+                <div>
+                    <label for="search-product" class="form-label">Tìm kiếm</label>
+                    <input type="text" id="search-product" class="form-input" placeholder="Tìm kiếm">
+                    <button class="btn btn-primary" id="search-name">Tìm</button>
+                </div>
+            </div>
+            <div class="col-4 d-flex justify-content-end gap-3">
+                <a href="register.html" title="Đăng ký"><i class="bi bi-person-plus fs-4"></i></a>
+                <a href="login.html" title="Đăng nhập"><i class="bi bi-box-arrow-in-right fs-4"></i></a>
+                <a href="cart.html" title="Giỏ hàng"><i class="bi bi-cart fs-4"></i></a>
+                <div id="user-dropdown">
+                </div>
+            </div>
+        </div>
+        <div id="filter-product" class="mb-2">
+            <label for="min_price">Giá từ : </label>
+            <input type="number" class="form-control-sm" id="min_price" style="width: 80px;">
+            <label for="max_price">đến</label>
+            <input type="number" class="form-control-sm" id="max_price" style="width: 80px;">
+            <button type="submit" id="filter-btn" class="me-5"><i class="bi bi-search"></i></button>
+           
+
+
+            <select id="sort-price">
+                <option value="">Lọc giá </option>
+                <option value="asc">Thấp->Cao</option>
+                <option value="desc">Cao->Thấp</option>
+            </select>
+
+        </div>
+
+        <div id="clear-search">
+            <a href="#" class="clear-search btn btn-secondary mb-3" style="display: none;">X Tên</a>
+        </div>
+        <div id="clear-filter">
+            <a href="#" class="clear-filter btn btn-secondary mb-3" style="display: none;">X Lọc</a>
+        </div>
+        <div id="product-list" class="row g-4"></div>
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center mt-3"></ul>
+        </nav>
+
+    </div>
+</body>
+
+</html> -->
+
+
+ 

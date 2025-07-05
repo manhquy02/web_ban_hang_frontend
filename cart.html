@@ -1,0 +1,374 @@
+<html>
+
+<head>
+    <title>cart</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+
+    <!-- <script>
+        $(document).ready(function () {
+            function renderCart() {
+                let cart = JSON.parse(localStorage.getItem('cart') || '[]')
+                $('.cart-item').empty();
+                cart.forEach((product, index) => {
+                    $('.cart-item').append(`  
+                <tr data-index="${index}">
+                    <td>${index + 1}</td>
+                    <td>${product.name}</td>
+                    <td>${product.price}</td>
+                    <td>${product.quantity}</td>
+                    <td> <button class="delete-btn btn btn-danger">Xóa</button></td>
+                </tr>
+                `)
+                });
+            }
+            renderCart();
+            $('.cart-item').on('click', '.delete-btn', function () {
+                let index = $(this).closest('tr').data('index');
+                let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+                cart.splice(index, 1);
+                localStorage.setItem('cart', JSON.stringify(cart));
+                renderCart();
+            })
+        }) -->
+    <!-- </script> -->
+
+
+    <script>
+
+        function loadProducts(page = 1) {
+            const name_product = $('#name_product').val();
+            const limit = 8;
+            $.ajax({
+                url: 'http://localhost:5555/products',
+                method: 'GET',
+                data: {
+                    name_product,
+                    page,
+                    limit
+                },
+                success: function (res) {
+                    console.log(res.data)
+                    const products = res.data;
+                    const pagination = res.pagination;
+                    const productList = $('#product-list');
+                    productList.empty();
+
+                    if (!products || products.length === 0) {
+                        productList.append('<p>Không có sản phẩm nào.</p>');
+                        $('#pagination').empty();
+                        return;
+                    }
+
+
+                    products.forEach(product => {
+                        productList.append(`
+                                <div class="col-md-3 mb-4 ">
+                                    <div class="card h-100 text-center">
+                                        <div class="card-body ">
+                                                <img src="http://localhost:5555/uploads/${product.image}" class="card-img-top" alt="${product.name_product}" style="object-fit: contain; height: 200px;">
+                                            <h5 class="card-title text-truncate fw-bold text-dark mb-3 mt-3 product-name" data-id="${product.id}" >${product.name_product}</h5>
+                                            <p class="card-text  fw-bold text-danger fs-5">Giá: ${product.price.toLocaleString()}₫</p>
+                                         
+                                        </div>
+                                    </div>
+                                </div>
+                            `);
+                    });
+
+                    if (pagination) {
+                        renderPagination(pagination.totalPages, pagination.page);
+                    }
+                },
+                error: function () {
+                    alert('Lỗi khi tải sản phẩm');
+                }
+            });
+        }
+
+        function renderPagination(totalPages, currentPage) {
+            let paginationHTML = '';
+            for (let i = 1; i <= totalPages; i++) {
+                paginationHTML += `<button onclick="loadProducts(${i})" ${i === currentPage ? 'style="font-weight:bold;"' : ''} class="btn btn-sm btn-outline-primary me-1">${i}</button>`;
+            }
+            $('#pagination').html(`<div class="d-flex justify-content-center gap-2">${paginationHTML}</div>`);
+
+        }
+        $(document).ready(function () {
+            function renderCart() {
+                let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+                $('.cart-item').empty();
+
+                if (cart.length === 0) {
+                    $('.cart-item').html(`
+                     <div class="text-center mt-5  pt-5" >
+                        <i class="bi bi-cart-x" style="font-size: 4rem; color:orange"></i>
+                        <h4 class="mt-3 text-muted">Giỏ hàng của bạn đang trống</h4>
+                        <a href="index.html" class="btn btn-warning mt-3">Mua sắm ngay</a>
+                    </div>
+                    `);
+                    $('.pay-btn').hide();
+                    return;
+                }
+                $('.pay-btn').show();
+
+
+                cart.forEach((product, index) => {
+                    $('.cart-item').append(`
+                    <div class="card mb-2" data-index="${index}" data-stock="${product.stock}" style="width: 50%; margin: 0 auto;">
+                        <div class="row ">
+                            <div class="col-md-3 my-5">
+                                <img src="http://localhost:5555/uploads/${product.img}" alt="${product.name}"
+                                class="img-fluid rounded-start ms-3"
+                                style="height: 150px; width: 100%; object-fit: cover; border-radius: 8px;">
+                            </div>
+                            <div class="col-md-5 mt-5">
+                                <h5 class="mt-2">${product.name}</h5>
+                            </div>
+                            <div class="col-md-4 mt-5 d-flex flex-column justify-content-between">
+                                <div>
+                                    <h5 class="text-danger mt-2">${(product.price * (product.quantity || 1)).toLocaleString('vi-VN')}đ</h5>
+                                </div>
+                                <div class="d-flex mb-5">
+                                    <input type="number" min="1" data-old="${product.quantity || 1}" value="${product.quantity || 1}"
+                                    class="form-control quantity-input " style="width: 85px;">
+                                    <button class="delete-btn btn btn-danger ms-1">Xóa</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `)
+
+                });
+            }
+            renderCart();
+
+            if (localStorage.getItem('token')) {
+
+                $('#register-icon').addClass('d-none');
+                $('#login-icon').addClass('d-none');
+                const email = localStorage.getItem('email')
+                const dropdownHtml = `
+                 <div class="dropdown">
+                    <button class="btn btn-light rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;" data-bs-toggle="dropdown">
+                        👤
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><p class="dropdown-item" href="#">Tên : ${email}</p></li>
+                        <li><a class="dropdown-item" href="#" id="view-order-history">Lịch sử đơn hàng</a></li>
+                        <li><a class="dropdown-item" href="#" id="logout-btn">Đăng xuất</a></li>
+                    </ul>
+                </div>
+                `
+                $('#user-dropdown').html(dropdownHtml)
+
+            }
+            $(document).on('click', '#view-order-history', function (e) {
+                e.preventDefault();
+
+                window.location.href = 'ordered.html'
+            })
+            $(document).on('click', '#logout-btn', function (e) {
+                e.preventDefault();
+                localStorage.removeItem('token');
+                localStorage.removeItem('email');
+                localStorage.removeItem('id');
+                window.location.href = 'index.html'
+            })
+            $('#name_product').on('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const value = $(this).val().trim();
+                    if (value !== '') {
+                        $('#clear-search').removeClass('d-none')
+                        loadProducts(1)
+                    } else {
+                        $('#clear-search').addClass('d-none')
+                    }
+                }
+
+            })
+
+
+            $('#clear-search').on('click', function (e) {
+                $('#name_product').val('');
+                $(this).addClass('d-none');
+                loadProducts(1);
+            })
+
+            $('.cart-item').on('click', '.delete-btn', function () {
+                let index = $(this).closest('.card').data('index');
+                let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+                cart.splice(index, 1);
+                localStorage.setItem('cart', JSON.stringify(cart))
+                renderCart();
+            })
+            $('.cart-item').on('focus', '.quantity-input', function () {
+                $(this).data('old', $(this).val());
+            });
+
+            $('.cart-item').on('change', '.quantity-input', function () {
+                let index = $(this).closest('.card').data('index');
+                let stock = $(this).closest('.card').data('stock');
+
+                let NewQuantity = parseInt($(this).val())
+                let oldQuantity = parseInt($(this).data('old'))
+                if (NewQuantity < 1 || isNaN(NewQuantity)) return;
+                if (NewQuantity > stock) {
+                    alert("Số lượng sản phẩm không đủ bán")
+                    $(this).val(oldQuantity);
+                    return;
+                }
+                let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+
+                cart[index].quantity = NewQuantity;
+                localStorage.setItem('cart', JSON.stringify(cart));
+                renderCart()
+            })
+            $('.pay-btn').on('click', function (e) {
+                e.preventDefault();
+                const cart = JSON.parse(localStorage.getItem('cart'))
+                if (cart.length === 0 || !cart) {
+                    alert('Giỏ hàng của bạn đang trống')
+                    return;
+                }
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    window.location.href = 'login.html'
+                } else {
+                    window.location.href = 'pay.html'
+                }
+            })
+        })
+    </script>
+</head>
+
+<body>
+
+
+
+
+    <div class="">
+        <div style="background-color: #ffd500;">
+            <div class="container">
+                <div class="  row align-items-center  py-2">
+                    <div class="col-4 ">
+                        <h1>
+                            <a href="index.html" class="text-decoration-none text-dark">Thế giới di động</a>
+                        </h1>
+                    </div>
+                    <div class="col-4">
+                        <input type="text" id="name_product" class="form-control form-control-sm py-2 rounded-pill "
+                            placeholder="Bạn tìm gì ...">
+                    </div>
+                    <div id="icon" class="col-4 d-flex justify-content-end gap-3">
+                        <a href="register.html" title="Đăng ký" id="register-icon"
+                            class="text-dark text-decoration-none d-flex align-items-center gap-1"> <i
+                                class="bi bi-person-plus fs-3"></i><span class="fs-5">Đăng ký</span></a>
+                        <a href="login.html" id="login-icon" title="Đăng nhập"
+                            class="text-dark text-decoration-none d-flex align-items-center gap-1"><i
+                                class="bi bi-box-arrow-in-right fs-3"></i><span class="fs-5">Đăng nhập</span></a>
+                        <a href="cart.html" class="text-dark text-decoration-none d-flex align-items-center gap-1"
+                            id="cart-icon" title="Giỏ hàng"><i class="bi bi-cart fs-3"></i><span class="fs-5">Giỏ
+                                hàng</span></a>
+                        <div id="user-dropdown"></div>
+                    </div>
+                    <div>
+                        <ul class="nav">
+                            <li class="nav-item">
+                                <a class="nav-link active text-dark" href="category.html?category_id=1">Điện thoại</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link active text-dark" href="category.html?category_id=2">Laptop</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link active text-dark" href="category.html?category_id=3">Phụ kiện</a>
+                            </li>
+                        </ul>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+        <div class="container py-3">
+
+            <div class="mb-4 d-flex align-items-center flex-wrap gap-2">
+                <!-- 
+
+                <div>
+
+                    <button hidden class="btn btn-outline-primary fw-bold ms-3" onclick="loadProducts()">Tìm
+                        kiếm</button>
+                </div> -->
+            </div>
+            <div id="active-filters" class="mb-3">
+
+                <button class="btn btn-sm btn-outline-danger d-none" id="clear-search">
+                    X Tìm
+                </button>
+
+            </div>
+
+            <div>
+                <!-- <h1>Điện thoại</h1> -->
+            </div>
+            <div id="product-list" class="row"></div>
+
+
+            <div class="container">
+                <!-- <div class="d-flex align-items-center mb-4 mt-3">
+            <h1 class="me-3 mb-0"><a href="index.html" class="text-decoration-none text-secondary ">Sản phẩm
+                    &gt;&gt;</a>
+            </h1>
+            <h1 class="mb-0">Giỏ hàng</h1>
+        </div> -->
+                <div class="d-flex align-items-center gap-2 my-4">
+                    <h4 class="mb-0">
+                        <a href="index.html" class="text-secondary text-decoration-none d-flex align-items-center">
+                            <i class="bi bi-house-door-fill me-1"></i> Trang chủ
+                        </a>
+                    </h4>
+                    <i class="bi bi-chevron-right text-muted"></i>
+                    <h4 class="mb-0 text-dark">Giỏ hàng</h4>
+                </div>
+                <!-- <div>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>STT</th>
+                        <th>Tên sản phẩm</th>
+                        <th>Ảnh</th>
+                        <th>Giá</th>
+                        <th>Số lượng</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody class="cart-item">
+
+                </tbody>
+            </table>
+            <button type="submit" class="btn btn-primary mt-3 pay-btn">Thanh toán</button>
+        </div> -->
+                <div>
+                    <div class="cart-item"></div>
+                    <button type="submit" class=" btn btn-warning pay-btn mt-2"
+                        style=" width: 50%; margin: 0 auto;display: block;">Thanh toán</button>
+
+                </div>
+            </div>
+
+            <nav>
+                <ul id="pagination" class="pagination justify-content-center mt-4"></ul>
+            </nav>
+
+        </div>
+    </div>
+
+
+</body>
+
+</html>
